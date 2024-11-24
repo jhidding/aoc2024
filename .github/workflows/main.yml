@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+    - main
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  deploy_pages:
+    name: weave and deploy pages
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: install dependencies
+      run: |
+        apt-get -y install pandoc python3
+        pip3 install entangled-cli
+    - name: weave pages
+      run: brei weave
+    - name: setup pages
+      uses: actions/configure-pages@v5
+    - name: upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'docs/site'
+    - name: deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
