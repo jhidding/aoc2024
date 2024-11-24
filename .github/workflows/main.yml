@@ -22,7 +22,7 @@ jobs:
         sudo dpkg -i pandoc-3.5-1-amd64.deb
         pip3 install entangled-cli
     - name: weave pages
-      run: brei weave
+      run: brei weave -B
     - name: setup pages
       uses: actions/configure-pages@v5
     - name: upload artifact
