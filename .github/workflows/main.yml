@@ -13,9 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13' 
     - name: install dependencies
       run: |
-        sudo apt-get -y install pandoc python3
+        sudo apt-get -y install pandoc
         pip3 install entangled-cli
     - name: weave pages
       run: brei weave
