@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: install dependencies
       run: |
-        apt-get -y install pandoc python3
+        sudo apt-get -y install pandoc python3
         pip3 install entangled-cli
     - name: weave pages
       run: brei weave
