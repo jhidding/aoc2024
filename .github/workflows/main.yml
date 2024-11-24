@@ -18,7 +18,8 @@ jobs:
         python-version: '3.13' 
     - name: install dependencies
       run: |
-        sudo apt-get -y install pandoc
+        wget https://github.com/jgm/pandoc/releases/download/3.5/pandoc-3.5-1-amd64.deb
+        sudo dpkg -i pandoc-3.5-1-amd64.deb
         pip3 install entangled-cli
     - name: weave pages
       run: brei weave
