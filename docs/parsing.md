@@ -166,12 +166,12 @@ sequence(ps...) = SequenceParser(ps)
 
 export sequence
 
-# this recursive parser could be made better by expanding a macro
-function parse(p::SequenceParser{P}, s::S) where {P, S <: AbstractString}
-    p.ps == () && return ((), s)
-    (first, s1) = parse(p.ps[1], s)
-    (rest, s2) = parse(sequence(p.ps[2:end]...), s1)
-    return ((first, rest...), s2)
+@generated function parse(p::SequenceParser{P}, s::S) where {P, S <: AbstractString}
+    n = length(P.types)
+    :(begin
+        $((:(($(Symbol("a$i")), s) = parse(p.ps[$i], s)) for i = 1:n)...)
+        return (($((Symbol("a$i") for i = 1:n)...),), s)
+    end)
 end
 
 function many(p::P) where {P <: Parser}
