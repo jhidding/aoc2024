@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "aoc2024"
+version = "0.1.0"
+description = "Solutions to Advent of Code 2024"
+authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pyright = "^1.1.389"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

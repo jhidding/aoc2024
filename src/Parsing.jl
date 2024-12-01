@@ -4,10 +4,28 @@ module Parsing
     import ..Monads: bind, pure
     import Base: parse
 
-    export pure, bind
+    export Parser, pure, bind, result_type, result
 
     abstract type Parser <: Monad end
     # function parse end
+
+    value_type(::Type{Tuple{V, S}}) where {S <: AbstractString, V} = V
+    value_type(::Type{Union{A, B}}) where {A, B} = Union{value_type(A), value_type(B)}
+    value_type(::Type{Any}) = Any
+
+    function result_type(::Type{P}) where {P <: Parser}
+        t = Base.return_types(parse, [P, String])
+
+        if length(t) == 1
+            value_type(t[1])
+        else
+            Any
+        end
+    end
+
+    result_type(::P) where {P <: Parser} = result_type(P)
+
+    result(x::Tuple{T, U}) where {T, U} = x[1]
 
     mutable struct FnParser{F} <: Parser
         fn::F
@@ -107,8 +125,9 @@ module Parsing
     end
 
     function many(p::P) where {P <: Parser}
+        RT = result_type(P)
         function (s::S) where {S <: AbstractString}
-            result = []
+            result = RT[]
             while true
                 try
                     (x, s) = parse(p, s)
@@ -155,6 +174,10 @@ module Parsing
             throw(Expected("$(p.lit)", s))
         end
         return (p.lit, s[length(p.lit)+1:end])
+    end
+
+    parse(p::Parser) = function(s::AbstractString)
+        parse(p, s)
     end
     # ~/~ end
     # ~/~ begin <<docs/parsing.md#parsing>>[5]
