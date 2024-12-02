@@ -273,3 +273,25 @@ using AOC2024.Day01: total_distance, similarity_score, count_sorted, zip_sorted
 <<count-sorted-spec>>
 <<zip-sorted-spec>>
 ```
+
+## Extra: Rust
+
+``` {.rust file=rust/src/bin/day01.rs}
+use std::io;
+
+#[derive(Debug)]
+enum Error {
+    IO(io::Error),
+    ParseInt(ParseIntError)
+}
+
+fn read_integer_pair(line: &str) -> Result<(u32, u32), Error> {
+    line.split(' ').map(|x| x.parse::<u32>()).collect().map_err(Error::ParseInt)
+}
+
+fn main() -> Result<(), io::Error> {
+    let input: Vec<_> = io::stdin().lines().map(read_integer_pair).collect::<Result<Vec<_>, _>>()?;
+    println!("{:?}", input);
+    Ok(())
+}
+```
