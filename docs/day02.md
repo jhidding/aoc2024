@@ -3,9 +3,10 @@ title: Day 2
 ---
 
 # Day 2
+There should be a much much better way to solve part 2, but I'm too tired.
 
 ``` {.julia file=test/Day02Spec.jl}
-using AOC2024.Day02: safe_report
+using AOC2024.Day02: safe_report, tolerant_safe_report
 
 let input = [
     7 6 4 2 1;
@@ -32,22 +33,13 @@ function safe_report(v::AbstractVector{Int})
     check(d) || check(.-d)
 end
 
-function stencil1d3(v::AbstractVector{Int}, kernel::F) where {F}
-    result = zeros(Int, length(v))
-    result[1] = kernel(v[1:2]...)
-    for i = 2:(length(v)-1)
-        result[i] = kernel(v[i-1:i+1]...)
-    end
-    result[end] = kernel(v[end-1:end]...)
-    return result
-end
-
 function tolerant_safe_report(v::AbstractVector{Int})
-    ok(d) = (1 <= d) && (d <= 3)
-    kernel(a, b) = ok(b - a) ? 0 : 1
-    kernel(a, b, c) = (ok(b - a) && ok(c - b)) ? 0 : (ok(c - a) ? 1 : 2)
-    check(v) = sum(stencil1d3(v, kernel)) <= 1
-    check(v) || check(.-v)
+    safe_report(v) && return true
+    for i in 1:length(v)
+        w = deleteat!(copy(v), i)
+        safe_report(w) && return true
+    end
+    return false
 end
 
 read_input(io::IO) =

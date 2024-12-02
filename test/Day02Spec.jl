@@ -1,5 +1,5 @@
 # ~/~ begin <<docs/day02.md#test/Day02Spec.jl>>[init]
-using AOC2024.Day02: safe_report
+using AOC2024.Day02: safe_report, tolerant_safe_report
 
 let input = [
     7 6 4 2 1;
