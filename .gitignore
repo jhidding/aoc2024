@@ -2,3 +2,4 @@ site
 .entangled/filedb.json
 __pycache__
 rust/target
+docs/contents.md
