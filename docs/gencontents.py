@@ -25,7 +25,11 @@ def write_if_changed(filename):
     out = io.StringIO()
     yield out
     content = out.getvalue()
-    if content != open(filename, "r").read():
+    try:
+        current = open(filename, "r").read()
+    except FileNotFoundError:
+        current = ""
+    if content != current:
         open(filename, "w").write(content)
 
 
