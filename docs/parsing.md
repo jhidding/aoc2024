@@ -72,6 +72,13 @@ module Parsing
         return p.fn(s)
     end
 
+    const item_p = function(inp::S) where {S <: AbstractString}
+        isempty(inp) && throw(Fail("End of input"))
+        (inp[1], inp[2:end])
+    end |> FnParser
+
+    export item_p
+
     <<parsing>>
 end
 ```
@@ -174,7 +181,7 @@ Base.:~(p::P) where {P <: Parser} = optional(p)
 
 ``` {.julia #parsing}
 Base.:>>>(a::A, b::B) where {A <: Parser, B <: Parser} = a >> (_ -> b)
-skip(p::P) where {P <: Parser} = v -> (p >>> pure_p(v))
+Base.skip(p::P) where {P <: Parser} = v -> (p >>> pure_p(v))
 
 struct SequenceParser{P} <: Parser
     ps::P
@@ -280,4 +287,38 @@ p = sequence(match_p("a"), match_p("b"))
 
 p = many(integer)
 @test parse(p, "1  2 3  4 56    7 abc") == ([1, 2, 3, 4, 56, 7], "abc")
+```
+
+### Many somethings
+I implemented this parser but ended up not needing it.
+
+``` {.julia #parsing}
+union_types(u) = (u,)
+union_types(u::Union) = (u.a, union_types(u.b)...)
+
+function many_somethings(p::P) where {P <: Parser}
+    types = Set(union_types(result_type(P)))
+    @assert Nothing ∈ types
+    value_types = collect(setdiff(types, [Nothing]))
+    @assert all(value_types .<: Some)
+    if length(value_types) == 1
+        RT = value_types[1].types[1]
+    else
+        ts = [t.types[1] for t in value_types]
+        RT = Union{ts...}
+    end
+
+    function (s::S) where {S <: AbstractString}
+        result = RT[]
+        while true
+            try
+                (x, s) = parse(p, s)
+                x === nothing && continue
+                push!(result, something(x))
+            catch
+                return (result, s)
+            end
+        end
+    end |> FnParser
+end
 ```
