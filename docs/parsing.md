@@ -5,6 +5,24 @@ title: Parsing
 # Parser combinators
 
 ## Monads
+This `Parser` system is **monadic**. A `Monad` is a type for which we have implemented a special composition rule, known as `bind` (aliased to `>>` operator), as well as a method to bring values into the monad, `pure`. One example is the `Maybe` monad.
+
+``` {.julia #maybe-monad}
+module MonadMaybe
+    using ..Monads
+    import ..Monads: bind, pure
+
+    struct Maybe{T} <: Monad
+        value::Union{Some{T}, Nothing}
+    end
+
+    bind(x::Maybe{T}, f::F) where {T, F} =
+        x.value === nothing ? nothing : f(something(x.value))
+
+    pure(::Type{Maybe}, value::T) where {T} =
+        Maybe{T}(Some(value))
+end
+```
 
 ``` {.julia file=src/Monads.jl}
 module Monads
