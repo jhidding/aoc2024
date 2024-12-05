@@ -37,7 +37,7 @@ module Monads
     pure(::Type{M}) where {M <: Monad} = (x -> pure(M, x))
     fmap(::Type{M}, f::F) where {M <: Monad, F} = pure(M) ∘ f
     fmap(f::F, m::M) where {M <: Monad, F} = m >> fmap(M, f)
-    starmap(::Type{M}, f::F) where {F, M <: Monad} = pure ∘ splat(f)
+    starmap(::Type{M}, f::F) where {F, M <: Monad} = pure(M) ∘ splat(f)
 end
 ```
 
@@ -233,7 +233,7 @@ function many(p::P) where {P <: Parser}
 end
 
 sep_by_p(p::A, sep::B) where {A <: Parser, B <: Parser} =
-    sequence(p, many(sep >>> p)) >> starmap((h, t) -> pushfirst!(t, h))
+    sequence(p, many(sep >>> p)) >> starmap(Parser, (h, t) -> pushfirst!(t, h))
 
 export many, sep_by_p
 ```
