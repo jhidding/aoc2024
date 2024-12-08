@@ -1,49 +1,37 @@
 # ~/~ begin <<docs/day07.md#src/Day07.jl>>[init]
 module Day07
 
-using ..Monads
-using ..Parsing
+read_input(io::IO) =
+    [(parse(Int, a), parse.(Int, split(b)))
+     for (a, b) in split.(readlines(io), ':')]
 
-function read_input(io::IO)
-    space_p = match_p(r" *")
-    line_p = sequence(
-        integer_p >> skip(match_p(": ")),
-        many(token(integer_p, space_p)))
-    read(io, String) |> parse(sep_by_p(line_p, match_p("\n"))) |> result
+function good_equation_1(x::Int, n::AbstractVector{Int})
+    length(n) == 1 && return x == n[1]
+
+    x % n[end] == 0 &&
+        good_equation_1(x ÷ n[end], n[1:end-1]) && return true
+
+    return good_equation_1(x - n[end], n[1:end-1])
 end
 
-function combinations(t::T, n::Int) where {T}
-    Iterators.product(Iterators.repeated(t, n)...)
-end
+function good_equation_2(x::Int, n::AbstractVector{Int})
+    length(n) == 1 && return x == n[1]
 
-function concat_number(a::Int, b::Int)
-    a * 10^ndigits(b) + b
-end
+    x % n[end] == 0 &&
+        good_equation_2(x ÷ n[end], @view n[1:end-1]) && return true
 
-function eval_op(sym::Symbol, a::Int, b::Int)
-    sym == :* && return a + b
-    sym == :+ && return a * b
-    sym == :|| && return concat_number(a, b)
-    throw("unknown operator $sym")
-end
+    d = 10^ndigits(n[end])
+    (x - n[end]) % d == 0 &&
+        good_equation_2((x - n[end]) ÷ d, @view n[1:end-1]) && return true
 
-function eval_equation(n::Vector{Int}, ops::NTuple{M,Symbol}, max::Int) where {M}
-    x = n[1]
-    for i in 1:(length(n)-1)
-        x = eval_op(ops[i], x, n[i+1])
-        x > max && return nothing
-    end
-    return x
-end
-
-function good_equation(r::Int, n::Vector{Int})
-    any(ops->eval_equation(n, ops, r)==r,
-        combinations((:*, :||, :+), length(n) - 1))
+    return good_equation_2(x - n[end], @view n[1:end-1])
 end
 
 function main(io::IO)
     input = read_input(io)
-    sum(r for (r, n) in input if good_equation(r, n))
+    part1 = sum(r for (r, n) in input if good_equation_1(r, n))
+    part2 = sum(r for (r, n) in input if good_equation_2(r, n))
+    return part1, part2
 end
 
 end
