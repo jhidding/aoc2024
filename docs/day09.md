@@ -2,57 +2,84 @@
 title: Day 9
 ---
 
-# Day 9
+# Day 9: Disk Fragmenter
 
-``` {.julia file=test/Day09Spec.jl}
-# add tests
+For Part 1, we can solve this without actually defragmenting. We loop through the input from two sides.
+
+``` {.julia #day09-part1}
+function checksum(input::Vector{I}) where {I <: Integer}
+    <<day09-checksum>>
+end
 ```
 
-``` {.julia file=src/Day09.jl}
-module Day09
+We keep track of the `block_id` and `total`,
 
-using .Iterators: zip, flatten, countfrom, repeated
+``` {.julia #day09-checksum}
+block_id = 0
+total = 0
+```
 
-function checksum(input::Vector{I}) where {I <: Integer}
-    block_id = 0
-    tail_file_id = length(input) ÷ 2
-    tail_file_size = input[end]
-    total = 0
+Then define a helper function to increase the checksum:
 
-    function add(fid::Int64, fsize::I)
-        total += (block_id * fsize + ((fsize - 1) * fsize) ÷ 2) * fid
-        block_id += fsize
-    end
+``` {.julia #day09-checksum}
+function add(fid::Int64, fsize::I)
+    total += (block_id * fsize + ((fsize - 1) * fsize) ÷ 2) * fid
+    block_id += fsize
+end
+```
 
-    for i in 1:length(input)
-        if (i % 2 == 1)
-            # file
-            file_id = i ÷ 2
-            if file_id >= tail_file_id
-                add(file_id, tail_file_size)
-                return total
-            end
-            add(file_id, input[i])
-        else
-            # free space
-            gap = input[i]
+Now we loop ever the input, alternating between file blocks and free blocks.
 
-            while gap > tail_file_size
-                add(tail_file_id, tail_file_size)
-                gap -= tail_file_size
-                tail_file_id -= 1
-                if tail_file_id == i ÷ 2 - 1
-                    return total
-                end
-                tail_file_size = input[tail_file_id*2 + 1]
-            end
+``` {.julia #day09-checksum}
+tail_file_id = length(input) ÷ 2
+tail_file_size = input[end]
 
-            add(tail_file_id, gap)
-            tail_file_size -= gap
-        end
+for i in 1:length(input)
+    if (i % 2 == 1)
+        <<day09-file>>
+    else
+        <<day09-free-space>>
     end
 end
+```
 
+In case of a file, we need to check that we're not past the files that we already allocated to previous free space.
+
+``` {.julia #day09-file}
+file_id = i ÷ 2
+if file_id >= tail_file_id
+    add(file_id, tail_file_size)
+    return total
+end
+add(file_id, input[i])
+```
+
+If we're in free space, we add from the tail.
+
+``` {.julia #day09-free-space}
+gap = input[i]
+
+while gap > tail_file_size
+    add(tail_file_id, tail_file_size)
+    gap -= tail_file_size
+    tail_file_id -= 1
+    if tail_file_id == i ÷ 2 - 1
+        return total
+    end
+    tail_file_size = input[tail_file_id*2 + 1]
+end
+
+add(tail_file_id, gap)
+tail_file_size -= gap
+```
+
+This entire algorithm is quite finicky and sensitive to off-by-one errors, but it seems to work.
+
+# Part 2
+
+For Part 2, I'm afraid we actually have to keep a data structure. I'm encoding the disk as a vector of `(id, len)` pairs, where an id of `-1` corresponds to free space. I'm looping down from high file id, each time using `findprev` to find the position and length of that file. Then `findfirst` to find the earliest gap that fits the file.
+
+``` {.julia #day09-part2}
 run_length(input::Vector{Int}) =
     zip(flatten(zip(countfrom(0), repeated(-1))), input) |> collect
 
@@ -83,6 +110,17 @@ function checksum_2(rl::Vector{Tuple{Int, Int}})
     end
     return total
 end
+```
+
+# Main
+
+``` {.julia file=src/Day09.jl}
+module Day09
+
+using .Iterators: zip, flatten, countfrom, repeated
+
+<<day09-part1>>
+<<day09-part2>>
 
 function main(io::IO)
     input = collect(strip(read(io, String))) .- '0'
@@ -94,4 +132,8 @@ function main(io::IO)
 end
 
 end
+```
+
+``` {.julia file=test/Day09Spec.jl}
+# add tests
 ```

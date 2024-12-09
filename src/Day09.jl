@@ -56,9 +56,15 @@ function defrag!(rl::Vector{Tuple{Int, Int}})
         n === nothing && continue
 
         s = rl[n][2]
+        t = rl[p][2]
         rl[n] = rl[p]
-        insert!(rl, n+1, (-1, rl[n][2] - rl[p][2]))
-        rl[p] = (-1, rl[p][2])
+        rl[p] = (-1, t)
+        s == t && continue
+        if rl[n+1][1] == -1
+            rl[n+1] = (-1, rl[n+1][2] + s -t)
+        else
+            insert!(rl, n+1, (-1, s - t))
+        end
     end
 end
 
@@ -66,7 +72,7 @@ function checksum_2(rl::Vector{Tuple{Int, Int}})
     total = 0
     px = 0
     for (i, x) in rl
-        if i > 0
+        if i >= 0
             total += (px * x + ((x-1) * x) ÷ 2) * i
         end
         px += x
