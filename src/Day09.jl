@@ -56,20 +56,25 @@ run_length(input::Vector{Int}) =
     zip(flatten(zip(countfrom(0), repeated(-1))), input) |> collect
 
 function defrag!(rl::Vector{Tuple{Int, Int}})
-    m = rl[end][1]
-    p = length(rl)
-    for i = m:-1:0
-        p = findprev(x->x[1] == i, rl, p)
-        p === nothing && throw("could not find $(i) in $(rl)")
-        t = rl[p][2]
-        n = findfirst(((x, y),)->x == -1 && y >= t, @view rl[1:p-1])
-        n === nothing && continue
+    max_file_id = rl[end][1]
+    ptr = length(rl)
+    for file_id = max_file_id:-1:0
+        # update ptr and file_size to entry matching file_id
+        ptr = findprev(((id, _),)->id == file_id, rl, ptr)
+        ptr === nothing && throw("could not find $(file_id) in $(rl)")
+        file_size = rl[ptr][2]
 
-        s = rl[n][2]
-        rl[n] = rl[p]
-        rl[p] = (-1, t)
-        s == t && continue
-        insert!(rl, n+1, (-1, s - t))
+        # find a gap large enough
+        free_block = findfirst(
+            ((id, sz),)->id == -1 && sz >= file_size,
+            @view rl[1:ptr-1])
+        free_block === nothing && continue
+
+        free_size = rl[free_block][2]
+        rl[free_block] = rl[ptr]
+        rl[ptr] = (-1, file_size)
+        file_size == free_size && continue
+        insert!(rl, free_block + 1, (-1, free_size - file_size))
     end
     return rl
 end
