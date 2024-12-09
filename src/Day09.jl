@@ -3,28 +3,34 @@ module Day09
 
 using .Iterators: zip, flatten, countfrom, repeated
 
+# ~/~ begin <<docs/day09.md#day09-part1>>[init]
 function checksum(input::Vector{I}) where {I <: Integer}
+    # ~/~ begin <<docs/day09.md#day09-checksum>>[init]
     block_id = 0
-    tail_file_id = length(input) ÷ 2
-    tail_file_size = input[end]
     total = 0
-
+    # ~/~ end
+    # ~/~ begin <<docs/day09.md#day09-checksum>>[1]
     function add(fid::Int64, fsize::I)
         total += (block_id * fsize + ((fsize - 1) * fsize) ÷ 2) * fid
         block_id += fsize
     end
+    # ~/~ end
+    # ~/~ begin <<docs/day09.md#day09-checksum>>[2]
+    tail_file_id = length(input) ÷ 2
+    tail_file_size = input[end]
 
     for i in 1:length(input)
         if (i % 2 == 1)
-            # file
+            # ~/~ begin <<docs/day09.md#day09-file>>[init]
             file_id = i ÷ 2
             if file_id >= tail_file_id
                 add(file_id, tail_file_size)
                 return total
             end
             add(file_id, input[i])
+            # ~/~ end
         else
-            # free space
+            # ~/~ begin <<docs/day09.md#day09-free-space>>[init]
             gap = input[i]
 
             while gap > tail_file_size
@@ -39,10 +45,13 @@ function checksum(input::Vector{I}) where {I <: Integer}
 
             add(tail_file_id, gap)
             tail_file_size -= gap
+            # ~/~ end
         end
     end
+    # ~/~ end
 end
-
+# ~/~ end
+# ~/~ begin <<docs/day09.md#day09-part2>>[init]
 run_length(input::Vector{Int}) =
     zip(flatten(zip(countfrom(0), repeated(-1))), input) |> collect
 
@@ -52,20 +61,17 @@ function defrag!(rl::Vector{Tuple{Int, Int}})
     for i = m:-1:0
         p = findprev(x->x[1] == i, rl, p)
         p === nothing && throw("could not find $(i) in $(rl)")
-        n = findfirst(x->x[1] == -1 && x[2] >= rl[p][2], rl[1:p-1])
+        t = rl[p][2]
+        n = findfirst(((x, y),)->x == -1 && y >= t, @view rl[1:p-1])
         n === nothing && continue
 
         s = rl[n][2]
-        t = rl[p][2]
         rl[n] = rl[p]
         rl[p] = (-1, t)
         s == t && continue
-        if rl[n+1][1] == -1
-            rl[n+1] = (-1, rl[n+1][2] + s -t)
-        else
-            insert!(rl, n+1, (-1, s - t))
-        end
+        insert!(rl, n+1, (-1, s - t))
     end
+    return rl
 end
 
 function checksum_2(rl::Vector{Tuple{Int, Int}})
@@ -79,6 +85,7 @@ function checksum_2(rl::Vector{Tuple{Int, Int}})
     end
     return total
 end
+# ~/~ end
 
 function main(io::IO)
     input = collect(strip(read(io, String))) .- '0'

@@ -89,21 +89,24 @@ function defrag!(rl::Vector{Tuple{Int, Int}})
     for i = m:-1:0
         p = findprev(x->x[1] == i, rl, p)
         p === nothing && throw("could not find $(i) in $(rl)")
-        n = findfirst(x->x[1] == -1 && x[2] >= rl[p][2], rl[1:p-1])
+        t = rl[p][2]
+        n = findfirst(((x, y),)->x == -1 && y >= t, @view rl[1:p-1])
         n === nothing && continue
 
         s = rl[n][2]
         rl[n] = rl[p]
-        insert!(rl, n+1, (-1, rl[n][2] - rl[p][2]))
-        rl[p] = (-1, rl[p][2])
+        rl[p] = (-1, t)
+        s == t && continue
+        insert!(rl, n+1, (-1, s - t))
     end
+    return rl
 end
 
 function checksum_2(rl::Vector{Tuple{Int, Int}})
     total = 0
     px = 0
     for (i, x) in rl
-        if i > 0
+        if i >= 0
             total += (px * x + ((x-1) * x) ÷ 2) * i
         end
         px += x
