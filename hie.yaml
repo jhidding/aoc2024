@@ -1,0 +1,11 @@
+cradle:
+  multi:
+    - path: "./haskell"
+      config:
+        cradle:
+          cabal:
+          - path: "./haskell/app/Day11.hs"
+            component: "aoc2024:exe:day11"
+
+          - path: "./haskell/app/Main.hs"
+            component: "aoc2024:exe:aoc2024"

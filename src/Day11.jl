@@ -2,6 +2,7 @@
 module Day11
 
 using Memoize: @memoize
+using DataStructures: DefaultDict
 
 @memoize function count_stones(x::Int, n::Int)
     if n == 0
@@ -14,6 +15,33 @@ using Memoize: @memoize
     else
         count_stones(x * 2024, n - 1)
     end
+end
+
+function blink(stones::DefaultDict{Int, Int,Int})
+    result = DefaultDict{Int,Int,Int}(0)
+    for (k, v) in pairs(stones)
+        if k == 0
+            result[1] += v
+        elseif ndigits(k) & 1 == 0
+            f = 10^(ndigits(k) >> 1)
+            result[k ÷ f] += v
+            result[k % f] += v
+        else
+            result[k * 2024] += v
+        end
+    end
+    return result
+end
+
+function count_stones_2(input::Vector{Int}, n::Int)
+    counts = DefaultDict{Int,Int,Int}(0)
+    for i in input
+        counts[i] += 1
+    end
+    for i = 1:n
+        counts = blink(counts)
+    end
+    return sum(values(counts))
 end
 
 function main(io::IO)

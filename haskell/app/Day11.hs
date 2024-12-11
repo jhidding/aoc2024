@@ -7,7 +7,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.MemoTrie (memoFix)
 
 readInput :: (MonadIO m) => m [Int]
-readInput = liftIO $ (fmap $ read . T.unpack) <$> T.words <$> T.IO.getContents
+readInput = liftIO $ fmap (read . T.unpack) . T.words <$> T.IO.getContents
 
 ndigits :: Int -> Int
 ndigits x
@@ -16,10 +16,10 @@ ndigits x
 
 countStones :: ((Int, Int) -> Int) -> (Int, Int) -> Int
 countStones f (x, n)
-    | n == 0                 = 1
-    | x == 0                 = f (1, n - 1)
-    | ndigits x `mod` 2 == 0 = f (x `div` q, n - 1) + f (x `mod` q, n - 1)
-    | otherwise              = f (x * 2024, n - 1)
+    | n == 0            = 1
+    | x == 0            = f (1, n - 1)
+    | even $ ndigits x  = f (x `div` q, n - 1) + f (x `mod` q, n - 1)
+    | otherwise         = f (x * 2024, n - 1)
     where q = 10^(ndigits x `div` 2)
 
 blink :: [Int] -> Int -> Int
@@ -29,6 +29,6 @@ blink input n = sum [cs (i, n) | i <- input]
 main :: IO()
 main = do
     input <- readInput
-    putStrLn $ show $ blink input 25
-    putStrLn $ show $ blink input 75
+    print $ blink input 25
+    print $ blink input 75
 -- ~/~ end
