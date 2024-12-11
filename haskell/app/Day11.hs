@@ -1,45 +1,4 @@
----
-title: Day 11
----
-
-# Day 11
-One of those! Memoize and be fine.
-
-``` {.julia file=src/Day11.jl}
-module Day11
-
-using Memoize: @memoize
-
-@memoize function count_stones(x::Int, n::Int)
-    if n == 0
-        1
-    elseif x == 0
-        count_stones(1, n - 1)
-    elseif ndigits(x) % 2 == 0
-        f = 10^(ndigits(x) ÷ 2)
-        count_stones(x ÷ f, n - 1) + count_stones(x % f, n - 1)
-    else
-        count_stones(x * 2024, n - 1)
-    end
-end
-
-function main(io::IO)
-    input = read(io, String) |> split .|> (x->parse(Int, x))
-    part1 = sum(count_stones(x, 25) for x in input)
-    part2 = sum(count_stones(x, 75) for x in input)
-    return part1, part2
-end
-
-end
-```
-
-``` {.julia file=test/Day11Spec.jl}
-# add tests
-```
-
-This would be much more beautiful in Haskell
-
-``` {.haskell file=haskell/app/Day11.hs}
+-- ~/~ begin <<docs/day11.md#haskell/app/Day11.hs>>[init]
 module Main where
 
 import qualified Data.Text as T
@@ -72,4 +31,4 @@ main = do
     input <- readInput
     putStrLn $ show $ blink input 25
     putStrLn $ show $ blink input 75
-```
+-- ~/~ end
