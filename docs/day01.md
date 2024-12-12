@@ -422,3 +422,12 @@ fn main() -> Result<(), io::Error> {
     Ok(())
 }
 ```
+
+## Extra: 2015 Day 19
+
+The puzzle links back to a previous puzzle that is very hard.
+
+``` {.julia file=src/Year2015Day19.jl}
+module Year2015Day19
+end
+```
