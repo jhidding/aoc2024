@@ -5,27 +5,30 @@ using ..Monads
 using ..Parsing
 
 struct PrizeMachine
-    button_a::Tuple{Int,Int}
-    button_b::Tuple{Int,Int}
-    prize::Tuple{Int,Int}
-end
-
-function close_to_integer(f, eps=1e-6)
-    abs(f - round(f)) < eps
+    a::Tuple{Int,Int}
+    b::Tuple{Int,Int}
+    p::Tuple{Int,Int}
 end
 
 function solve(pm::PrizeMachine)
-    A = Int[pm.button_a[1] pm.button_b[1];
-            pm.button_a[2] pm.button_b[2]]
-    y = Int[pm.prize...]
-    x = A \ y
-    # all(close_to_integer.(x)) ?
-    #     Tuple(Int.(round.(x))) : nothing
+    d = pm.a[1] * pm.b[2] - pm.a[2] * pm.b[1]
+    x = pm.b[2] * pm.p[1] - pm.b[1] * pm.p[2]
+    y = pm.a[1] * pm.p[2] - pm.a[2] * pm.p[1]
+    ((x % d == 0) && (y % d == 0)) || return nothing
+    (div(x, d), div(y, d))
 end
 
 function part1(input::Vector{PrizeMachine})
-    p = solve.(input) |> filter(!isnothing) |> stack
+    p = input .|> solve |> filter(!isnothing) |> stack
     p' * [3; 1] |> sum
+end
+
+function modify(pm::PrizeMachine)
+    PrizeMachine(pm.a, pm.b, pm.p .+ 10000000000000)
+end
+
+function part2(input::Vector{PrizeMachine})
+    input .|> modify |> part1
 end
 
 button_p(label::String) = sequence(
@@ -47,7 +50,8 @@ read_input(io::IO) =
         result
 
 function main(io::IO)
-    return nothing
+    input = read_input(io)
+    part1(input), part2(input)
 end
 
 end
