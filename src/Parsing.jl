@@ -191,7 +191,7 @@ module Parsing
     token(p::A, space::B = RegexParser(r"\s*")) where {A <: Parser, B <: Parser} =
         p >> skip(space)
 
-    integer_p = fmap(x -> parse(Int, x.match), match_p(r"-?[1-9][0-9]*"))
+    integer_p = fmap(x -> parse(Int, x.match), match_p(r"-?[1-9][0-9]*|0"))
 
     integer = token(integer_p)
 
