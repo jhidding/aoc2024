@@ -11,9 +11,166 @@ title: Day 17
 ``` {.julia file=src/Day17.jl}
 module Day17
 
+using ..Monads
+using ..Parsing
+
+struct Input
+    a::Int
+    b::Int
+    c::Int
+    program::Vector{Int}
+end
+
+mutable struct Computer
+    ip::Int
+    a::Int
+    b::Int
+    c::Int
+    program::Vector{Int}
+    out::Vector{Int}
+end
+
+initial_state(input::Input) =
+    Computer(0, input.a, input.b, input.c, input.program, Int[])
+
+function combo(c::Computer, n::Int)
+    n <= 3 && return n
+    n == 4 && return c.a
+    n == 5 && return c.b
+    n == 6 && return c.c
+    n >= 7 && throw("illegal operand")
+end
+
+adv(c::Computer, x::Int) = c.a >>= combo(c, x)
+bxl(c::Computer, x::Int) = c.b ⊻= x
+bst(c::Computer, x::Int) = c.b = mod(combo(c, x), 8)
+jnz(c::Computer, x::Int) = c.a == 0 ? nothing : c.ip = x - 2
+bxc(c::Computer, x::Int) = c.b ⊻= c.c
+out(c::Computer, x::Int) = push!(c.out, mod(combo(c, x), 8))
+bdv(c::Computer, x::Int) = c.b = c.a >> combo(c, x)
+cdv(c::Computer, x::Int) = c.c = c.a >> combo(c, x)
+
+function Base.iterate(c::Computer, s::Nothing)
+    c.ip >= length(c.program) && return nothing
+    opcode = [adv, bxl, bst, jnz, bxc, out, bdv, cdv]
+    instr, x = c.program[c.ip+1:c.ip+2]
+    opcode[instr+1](c, x)
+    c.ip += 2
+    return c, nothing
+end
+
+Base.iterate(c::Computer) = iterate(c, nothing)
+Base.IteratorSize(::Computer) = Base.SizeUnknown()
+
+function run(c::Computer)
+    for state in c end
+    return c.out
+end
+
+function find_input(rev_prog::Vector{Int}, a, out::Channel{Int})
+    isempty(rev_prog) && return a
+
+    for b in 0:7
+        a_next = a << 3 + (b ⊻ 1)
+        c = (a_next >> b) % 8
+        if b ⊻ c ⊻ 6 == rev_prog[1]
+            solution = find_input(rev_prog[2:end], a_next, out)
+            solution !== nothing && put!(out, solution)
+        end
+    end
+
+    return nothing
+end
+
+function read_input(io::IO)
+    register(a) = token(match_p("Register $a:")) >>> integer
+    program = token(match_p("Program:")) >>> sep_by_p(integer, match_p(","))
+    input = fmap(splat(Input), sequence(
+        register("A"), register("B"), register("C"), program))
+    read(io, String) |> parse(input) |> result
+end
+
 function main(io::IO)
     return nothing
 end
 
 end
 ```
+
+## Part 2
+
+My input is
+
+```
+Register A: 25358015
+Register B: 0
+Register C: 0
+
+Program: 2,4,1,1,7,5,0,3,4,7,1,6,5,5,3,0
+```
+
+Disassembled that would be:
+
+```
+bst 4
+bxl 1
+cdv 5
+adv 3
+bxc 7
+bxl 6
+out 5
+jnz 0
+```
+
+This is a single loop!
+
+```julia
+while a != 0
+    b = a % 8
+    b ⊻= 1
+    c = a >> b
+    a = a >> 3
+    b ⊻= c
+    b ⊻= 6
+    print(b % 8)
+end
+```
+
+We may reshuffle, and then the core loop is
+
+```julia
+while a != 0
+    # do stuff
+    a >>= 3
+end
+```
+
+In that "do stuff" is:
+
+1. flip the 1st bit from `a`, so: `b = a % 8 + 1` or `a % 8 - 1`
+   this determines which bits from `a` we're reading into `c`
+2. `c = a >> b`
+3. print `b%8 ⊻ c%8 ⊻ 6`
+
+The first number we should write is 2, or `0b010`. Then `b%8 ⊻ c%8 = 0b100`. We could make a table for admissible values of `b` and `c`.
+
+```julia
+using CairoMakie
+
+function plot_tables()
+    fig = Figure()
+    for r = 1:2
+        for c = 1:4
+            n = (r-1) * 4 + c - 1
+            ax = Axis(fig[r, c], title="$n")
+            table = xor.(xor.((0:7)[:,na], (0:7)[na,:]), n) .== 0
+            heatmap!(ax, table)
+        end
+    end
+    save("day16-table.svg", fig)
+end
+```
+
+We know that the value of `b` is one-to-one with the first three bits in `a`. And, these tables give a one-to-one mapping of `b` to `c`. So choosing `b` fixes the values for some other bits in `a`, which in turn fix values later on, drastically shrinking our state space.
+
+Furthermore, if `xor(b, 1) < 3` then the bits of `c` and `b` overlap.

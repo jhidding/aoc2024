@@ -42,7 +42,22 @@ module Parsing
 
     export item_p
 
-    # ~/~ begin <<docs/parsing.md#parsing>>[init]
+    # ~/~ begin <<docs/day03.md#parsing>>[init]
+    export repeated
+
+    function repeated(p::P) where {P <: Parser}
+        function (s::S) where {S <: AbstractString}
+            while true
+                try
+                    (x, s) = parse(p, s)
+                catch
+                    return (nothing, s)
+                end
+            end
+        end |> FnParser
+    end
+    # ~/~ end
+    # ~/~ begin <<docs/parsing.md#parsing>>[0]
     export pure_p
 
     struct PureParser{T} <: Parser
@@ -222,21 +237,6 @@ module Parsing
                     push!(result, something(x))
                 catch
                     return (result, s)
-                end
-            end
-        end |> FnParser
-    end
-    # ~/~ end
-    # ~/~ begin <<docs/day03.md#parsing>>[0]
-    export repeated
-
-    function repeated(p::P) where {P <: Parser}
-        function (s::S) where {S <: AbstractString}
-            while true
-                try
-                    (x, s) = parse(p, s)
-                catch
-                    return (nothing, s)
                 end
             end
         end |> FnParser
