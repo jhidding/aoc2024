@@ -186,6 +186,23 @@ end
 Base.:|(p1::A, p2::B) where {A <: Parser, B <: Parser} =
     Choice{A, B}(p1, p2)
 
+struct ChoiceMany{P} <: Parser
+    ps::Vector{P}
+end
+
+function parse(p::ChoiceMany{P}, s::S) where {P <: Parser, S <: AbstractString}
+    for q in p.ps
+        try
+            (r, s) = parse(q, s)
+            return (r, s)
+        catch e
+            continue
+        end
+    end
+    throw(Fail())
+end
+
+
 optional(p::P) where {P <: Parser} = p | nothing
 Base.:~(p::P) where {P <: Parser} = optional(p)
 ```
@@ -263,7 +280,7 @@ struct LiteralParser <: Parser
     lit::String
 end
 
-match_p(s::String) = LiteralParser(s)
+match_p(s::AbstractString) = LiteralParser(s)
 
 function parse(p::LiteralParser, s::S) where {S <: AbstractString}
     if !startswith(s, p.lit)
