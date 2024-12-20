@@ -11,61 +11,54 @@ struct Input
     program::Vector{Int}
 end
 
-mutable struct Computer
-    ip::Int
-    a::Int
-    b::Int
-    c::Int
-    program::Vector{Int}
-    out::Vector{Int}
+function compile(program::Vector{Int})
+    function combo(n::Int)
+        n <= 3 && return n
+        n == 4 && return :a
+        n == 5 && return :b
+        n == 6 && return :c
+        throw("illegal operand")
+    end
+
+    adv(x::Int) = :(a >>= $(combo(x)))
+    bxl(x::Int) = :(b ⊻= $(x))
+    bst(x::Int) = :(b = $(combo(x)) % 8)
+    jnz(x::Int) = :(a != 0 && @goto $(Symbol("pos", x)))
+    bxc(x::Int) = :(b ⊻= c)
+    out(x::Int) = :(push!(out, $(combo(x)) % 8))
+    bdv(x::Int) = :(b = a >> $(combo(x)))
+    cdv(x::Int) = :(c = a >> $(combo(x)))
+
+    instruction(opcode, operand) =
+        [adv, bxl, bst, jnz, bxc, out, bdv, cdv][opcode+1](operand)
+
+    instr = reshape(program, (2, :))
+    gotos = instr[2,instr[1,:] .== 3]
+    code = []
+    for (i, (opcode, operand)) in enumerate(eachcol(instr))
+        if i - 1 ∈ gotos
+            push!(code, :(@label $(Symbol("pos", i - 1))))
+        end
+        push!(code, instruction(opcode, operand))
+    end
+
+    :(function (a, b, c)
+        out = Int[]
+        $(code...)
+        return out
+    end)
 end
 
-initial_state(input::Input) =
-    Computer(0, input.a, input.b, input.c, input.program, Int[])
-
-function combo(c::Computer, n::Int)
-    n <= 3 && return n
-    n == 4 && return c.a
-    n == 5 && return c.b
-    n == 6 && return c.c
-    n >= 7 && throw("illegal operand")
-end
-
-adv(c::Computer, x::Int) = c.a >>= combo(c, x)
-bxl(c::Computer, x::Int) = c.b ⊻= x
-bst(c::Computer, x::Int) = c.b = mod(combo(c, x), 8)
-jnz(c::Computer, x::Int) = c.a == 0 ? nothing : c.ip = x - 2
-bxc(c::Computer, x::Int) = c.b ⊻= c.c
-out(c::Computer, x::Int) = push!(c.out, mod(combo(c, x), 8))
-bdv(c::Computer, x::Int) = c.b = c.a >> combo(c, x)
-cdv(c::Computer, x::Int) = c.c = c.a >> combo(c, x)
-
-function Base.iterate(c::Computer, s::Nothing)
-    c.ip >= length(c.program) && return nothing
-    opcode = [adv, bxl, bst, jnz, bxc, out, bdv, cdv]
-    instr, x = c.program[c.ip+1:c.ip+2]
-    opcode[instr+1](c, x)
-    c.ip += 2
-    return c, nothing
-end
-
-Base.iterate(c::Computer) = iterate(c, nothing)
-Base.IteratorSize(::Computer) = Base.SizeUnknown()
-
-function run(c::Computer)
-    for state in c end
-    return c.out
-end
-
-function find_input(rev_prog::Vector{Int}, a, out::Channel{Int})
+function find_input(rev_prog::Vector{Int}, a)
     isempty(rev_prog) && return a
 
-    for b in 0:7
-        a_next = a << 3 + (b ⊻ 1)
+    for q in 0:7
+        a_next = a << 3 + q
+        b = q ⊻ 1
         c = (a_next >> b) % 8
         if b ⊻ c ⊻ 6 == rev_prog[1]
-            solution = find_input(rev_prog[2:end], a_next, out)
-            solution !== nothing && put!(out, solution)
+            solution = find_input(rev_prog[2:end], a_next)
+            solution !== nothing && return solution
         end
     end
 
