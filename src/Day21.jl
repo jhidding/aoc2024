@@ -87,18 +87,14 @@ function gen_cmd(robots::Vector{Keypad}, a::Key, b::Key)
     length(p) < length(q) ? p : q
 end
 
-
 function complexity(robots::Vector{Keypad}, robotid::Int, seq::AbstractString)
     complexity(robots, robotid, seq, Dict{Tuple{Int,Char,Char},Int}())
 end
 
 function complexity(robots::Vector{Keypad}, robotid::Int, seq::AbstractString, cache)
     robotid == 0 && return length(seq)
-    sum(complexity(robots, robotid, a, b, cache) for (a, b) in zip('A' * seq[1:end-1], seq[1:end]))
-end
-
-macro cached_return(x)
-    esc(:(cache[(id, a, b)] = $x; return $x))
+    sum(complexity(robots, robotid, a, b, cache)
+        for (a, b) in zip('A' * seq[1:end-1], seq[1:end]))
 end
 
 function complexity(robots::Vector{Keypad}, id::Int, a::Key, b::Key, cache)
@@ -106,28 +102,38 @@ function complexity(robots::Vector{Keypad}, id::Int, a::Key, b::Key, cache)
         return cache[(id, a, b)]
     end
 
-    r = robots[id]
-    pos1 = findfirst(isequal(a), r)
-    pos2 = findfirst(isequal(b), r)
-    delta = pos2 - pos1
-    if delta == Pos(0, 0)
-        return cache[(id, a, b)] = 1
-    end
-    seq1 = repeat((delta[1] > 0 ? 'v' : '^'), abs(delta[1]))
-    seq2 = repeat((delta[2] > 0 ? '>' : '<'), abs(delta[2]))
-    delta[1] == 0 && return cache[(id, a, b)] = complexity(robots, id-1, seq2 * 'A', cache)
-    delta[2] == 0 && return cache[(id, a, b)] = complexity(robots, id-1, seq1 * 'A', cache)
+    function compute()
+        r = robots[id]
+        pos1 = findfirst(isequal(a), r)
+        pos2 = findfirst(isequal(b), r)
+        delta = pos2 - pos1
 
-    if r[pos1 + Pos(delta[1], 0)] === missing
-        return cache[(id, a, b)] = complexity(robots, id-1, seq2 * seq1 * 'A', cache)
-    end
-    if r[pos1 + Pos(0, delta[2])] === missing
-        return cache[(id, a, b)] = complexity(robots, id-1, seq1 * seq2 * 'A', cache)
+        if delta == Pos(0, 0)
+            return cache[(id, a, b)] = 1
+        end
+
+        seq1 = repeat((delta[1] > 0 ? 'v' : '^'), abs(delta[1]))
+        seq2 = repeat((delta[2] > 0 ? '>' : '<'), abs(delta[2]))
+
+        if delta[1] == 0
+            return complexity(robots, id-1, seq2 * 'A', cache)
+        end
+        if delta[2] == 0
+            return complexity(robots, id-1, seq1 * 'A', cache)
+        end
+        if r[pos1 + Pos(delta[1], 0)] === missing
+            return complexity(robots, id-1, seq2 * seq1 * 'A', cache)
+        end
+        if r[pos1 + Pos(0, delta[2])] === missing
+            return complexity(robots, id-1, seq1 * seq2 * 'A', cache)
+        end
+
+        p = complexity(robots, id-1, seq1 * seq2 * 'A', cache)
+        q = complexity(robots, id-1, seq2 * seq1 * 'A', cache)
+        return min(p, q)
     end
 
-    p = complexity(robots, id-1, seq1 * seq2 * 'A', cache)
-    q = complexity(robots, id-1, seq2 * seq1 * 'A', cache)
-    return cache[(id, a, b)] = min(p, q)
+    return cache[(id, a, b)] = compute()
 end
 
 function main(io::IO)

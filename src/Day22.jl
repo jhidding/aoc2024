@@ -25,8 +25,8 @@ sliding_window(vec::AbstractVector, n) =
     ((@view vec[i:i+n-1]) for i in 1:length(vec)-n+1)
 
 function count_bananas_fstyle(input::Vector{UInt64})
-    bananas = zeros(Int, 19, 19, 19, 19)
-    vs = falses(19, 19, 19, 19)
+    bananas = zeros(Int, 19^4)
+    vs = falses(19^4)
     ns = Vector{Int}(undef, 2000)
     d = Vector{Int}(undef, 1999)
     for s in input
@@ -35,38 +35,37 @@ function count_bananas_fstyle(input::Vector{UInt64})
         for i in 1:1999
             s = next_secret(s)
             ns[i+1] = s % 10
-            d[i] = ns[i+1] - ns[i] .+ 10
+            d[i] = ns[i+1] - ns[i] .+ 9
         end
         for i = 5:2000
-            idx = CartesianIndex{4}(d[i-4], d[i-3], d[i-2], d[i-1])
+            idx = ((d[i-4]*19 + d[i-3])*19 + d[i-2]) * 19 + d[i-1] + 1
             if !vs[idx]
                 vs[idx] = true
                 bananas[idx] += ns[i]
             end
         end
     end
-    return maximum(bananas)
+    return bananas
 end
 
-function count_bananas_arrays(input::Vector{UInt64})
+function count_bananas(input::Vector{UInt64})
     bananas = zeros(Int, 19, 19, 19, 19)
     vs = falses(19, 19, 19, 19)
     for seed in input
         vs .= false
         ns = take(Seed(seed), 2000) .|> last_digit
-        for seq in sliding_window(ns, 5)
-            idx = CartesianIndex{4}(
-                   seq[2] - seq[1] + 10,
-                   seq[3] - seq[2] + 10,
-                   seq[4] - seq[3] + 10,
-                   seq[5] - seq[4] + 10)
+        ds = ns[2:end] .- ns[1:end-1] .+ 10
+        for (seq, n) in zip(sliding_window(ds, 4), ns[5:end])
+            idx = CartesianIndex(seq[1], seq[2], seq[3], seq[4])
             if !vs[idx]
                 vs[idx] = true
-                bananas[idx] += seq[5]
+                bananas[idx] += n
             end
         end
     end
-    return maximum(bananas)
+    n, seq = findmax(bananas)
+    seq = Tuple(seq) .- 10
+    return seq, n
 end
 
 function read_input(io::IO)
