@@ -9,7 +9,7 @@ module Parsing
     abstract type Parser <: Monad end
     # function parse end
 
-    value_type(::Type{Tuple{V, S}}) where {S <: AbstractString, V} = V
+    value_type(::Type{Tuple{V, S}}) where {S, V} = V
     value_type(::Type{Union{A, B}}) where {A, B} = Union{value_type(A), value_type(B)}
     value_type(::Type{Any}) = Any
 
